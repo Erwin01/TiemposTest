@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tareas</title>
+    <meta charset="utf-8" />
+    <!--LIBRERIA DE JQUERY-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+    <!--LIBRERIA SEMANTIC-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/semantic.css" rel="stylesheet" />
+    <!--ESTILO - CSS3-->
+    <style>
+        .container {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <!--HEADER-->
+    <div class="ui menu">
+        <div class="header item">
+            PRUEBA DE DESARROLLO WEB - TIEMPOS
+        </div>
+    </div>
+    <!--CONTENEDOR-->
+    <div class="ui container">
+        <div class="ui grid">
+            <div class="column four wide">
+                <h2 class="ui header">
+                    Editor de Tareas
+                    <span class="sub header">Permite agregar o editar tareas</span>
+                </h2>
+                <form class="ui form">
+                    <div class="field">
+                        <label>Descripción de la tarea</label>
+                        <input id="input_descripcion" type="text" name="first-name" placeholder="Nombre tarea">
+                    </div>
+                    <input class="button green ui" type="button" value="Guardar" onclick="save();" />
+                </form>
+            </div>
+            <div class="right floated left aligned ten wide column">
+                <h2 class="ui header">
+                    Listado de Tareas
+                    <span class="sub header">Permite listar tareas</span>
+                </h2>
+                <table class="table ui">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tareas">
+                        <tr></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!--MI SCRIPT-->
+    <script>
+        /*Declaro variables*/
+        var url = 'services/Tareas'; // Enrutamiento
+        var listData = []            // Listado Datos
+        var selected = {}            // Seleccionar 
+
+        $(document).ready(function () {
+            list()
+        })
+        
+        /*Funcion lista*/
+        function list() {
+            $.getJSON(url)
+            .done(function (data) {
+                listData = data
+                $('#tareas').html("")
+                $.each(data, function (key, item) {
+                    $(getRowTemplate(item)).appendTo($('#tareas'));
+                });
+            });
+        }
+        /*Funcion Guardar*/
+        function save() {
+
+            var descripcion = $('#input_descripcion').val(); // Variable descripcion
+            /*Condicional - Validar campos de texto*/
+            if (descripcion === "") {
+                alert("Todos los campos son obligatorios.");
+                return;
+            }
+            /*Variable Tarea*/
+            var Tarea = {
+                DescripcionTarea: descripcion,
+            };
+            /*Variable info - convierte en texto tipo JSON*/
+            var info = JSON.stringify(Tarea);
+
+            if (selected.Id) {
+                $.ajax({
+                    url: 'services/Tareas/' + selected.Id,
+                    cache: false,
+                    type: 'PUT', //Crear Dato
+                    contentType: 'application/json; charset=utf-8',
+                    data: info,
+                    dataType: 'json',
+                    success: function (data) {
+                        selected = {}
+                        $('#input_descripcion').val('')
+                        list()
+                    }
+                }).fail(
+                    function (xhr, textStatus, err) {
+                        alert(err);
+                    }
+                );
+            } else {
+                $.ajax({
+                    url: 'services/Tareas',
+                    cache: false,
+                    type: 'POST', // Editar Dato
+                    contentType: 'application/json; charset=utf-8',
+                    data: info,
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#input_descripcion').val('')
+                        list()
+                    }
+                    /*Si falla*/
+                }).fail(
+                    function (xhr, textStatus, err) {
+                        alert(err);
+                    }
+                );
+            }
+        }
+        /*Funcion Seleccionar para Editar*/
+        function selectToEdit(id) {
+            $.each(listData, function (key, item) {
+                if (item.Id === id) {
+                    selected = item
+                }
+            })
+
+            $('#input_descripcion').val(selected.DescripcionTarea)
+        }
+
+        /*Funcion Eliminar*/
+        function remove(id) {
+            selected = {}
+            $('#input_descripcion').val('')
+            $.ajax({
+                url: 'services/Tareas/' + id,
+                cache: false,
+                type: 'DELETE',
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: function (data) {
+                    list()
+                }
+                /*Si falla*/
+            }).fail(
+                function (xhr, textStatus, err) {
+                    alert(err);
+                }
+            );
+        }
+
+        /*funcion Mostar Tabla \ <a class="button ui orange">Ver actividad</a>*/
+        function getRowTemplate(row) {
+            console.log(row)
+            return '<tr><td>' + row.DescripcionTarea + '</td><td>  <a onClick="selectToEdit(' + row.Id + ')" class="button ui orange">Editar</a><a  onClick="remove(' + row.Id + ')" class="button ui red">Eliminar</a></td></tr>'
+        }
+    </script>
+    <!--FINALIZA MI SCRIPT-->
+</body>
+</html>
